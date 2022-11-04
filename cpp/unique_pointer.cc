@@ -1,72 +1,44 @@
 #include <iostream>
-#include <utility>
 using namespace std;
 
 // Reference:
 // https://medium.com/analytics-vidhya/c-shared-ptr-and-how-to-write-your-own-d0d385c118ad
 
 template <typename T>
-class MySharedPtr{
+class MyUniquePtr{
 public:
     // Default constructor.
-    MySharedPtr(): ptr_(nullptr), ref_count_(new uint32_t(0)){}
+    MyUniquePtr(): ptr_(nullptr){}
 
     // Constructor.
-    MySharedPtr(T* ptr): ptr_(ptr), ref_count_(new uint32_t(1)){}
+    MyUniquePtr(T* ptr): ptr_(ptr){}
 
     // Copy constructor.
-    MySharedPtr(const MySharedPtr<T>& other){
-        ptr_ = other.ptr_;
-        ref_count_ = other.ref_count_;
-        if(ptr_){
-            (*ref_count_)++;
-        }
-    }
+    MyUniquePtr(const MyUniquePtr<T>& other) = delete;
 
     // Copy assignment.
-    MySharedPtr& operator=(const MySharedPtr<T>& other){
-        if(this == &other){
-        // if(ptr_ == other.ptr_){
-            return *this;
-        }
-
-        __cleanup__();
-
-        ptr_ = other.ptr_;
-        ref_count_ = other.ref_count_;
-        if(ptr_){
-            (*ref_count_)++;
-        }
-        return *this;
-    }
+    MyUniquePtr& operator=(const MyUniquePtr<T>& other) = delete;
 
     // Move constructor.
-    MySharedPtr(MySharedPtr<T>&& dying_obj){
-        ptr_ = dying_obj.ptr_;
-        ref_count_ = dying_obj.ref_count_;
-
+    MyUniquePtr(MyUniquePtr<T>&& dying_obj){
+        this->ptr_ = dying_obj.ptr_;
         dying_obj.ptr_ = nullptr;
-        dying_obj.ref_count_ = nullptr;
     }
 
     // Move assignment.
-    MySharedPtr& operator=(MySharedPtr&& dying_obj){
+    MyUniquePtr& operator=(MyUniquePtr&& dying_obj){
         if(ptr_ == dying_obj.ptr_) {
             return *this;
         }
         __cleanup__();
 
         ptr_ = dying_obj.ptr_;
-        ref_count_ = dying_obj.ref_count_;
-
         dying_obj.ptr_ = nullptr;
-        dying_obj.ref_count_ = nullptr;
-
         return *this;
     }
 
     // destructor.
-    ~MySharedPtr(){
+    ~MyUniquePtr(){
         __cleanup__();
     }
 
@@ -84,39 +56,18 @@ public:
     T* get_ptr(){
         return ptr_;
     }
-
-    // Get ref count.
-    uint32_t get_ref_count(){
-        return ref_count_ ? *ref_count_ : 0;
-    }
     
 private:
     void __cleanup__(){
         if(ptr_){
-            (*ref_count_)--;
-            if(*ref_count_ == 0){
-                delete ptr_;
-                delete ref_count_;
-            }
+            delete ptr_;
         }
     }
 
     T *ptr_;
-    uint32_t *ref_count_;
-};
-
-struct A{
-    int val;
-    A(int v) : val(v) {}
 };
 
 int main(){
-
-    MySharedPtr<A> pA(new A(100));
-    A* a = new A(10);
-    cout << "a = " << a->val << endl;
-    cout << " pA-> " << pA.operator->()->val << endl;
-
     // Test default constructor.
     MySharedPtr<int> p;
     cout << p.get_ref_count() << endl; /* 0 */
